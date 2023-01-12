@@ -1,0 +1,136 @@
+import turtle
+import time
+
+# Global Parameters
+INITIAL_X = -300
+INITIAL_Y = 0
+V_0 = 0
+MASS = 1 #kg
+DELTA_T = 0.01 # seconds
+TIMER = 0
+
+# -----------------
+
+def Simulation():
+    print("Running Sim")
+    Insight = Rocket()
+    Bay = Docking_Bay()
+    Driver = Pilot()
+    Info = Diagnostics()
+    Space = Outside_Environment()
+    wn = turtle.Screen()
+    wn.title("Rocket Simulation")
+    wn.bgcolor("Blue")
+    wn.setup(height=600, width=800)
+    wn.tracer(0)
+    TIMER = 0
+    wn.listen()
+    
+    end_sim = False
+    while end_sim == False:
+        # adjust outside force
+        wn.onkeypress(Space.setg, "g")
+        acceleration = int(Space.getg())
+        x = Insight.get_xpos()
+        Driver.compute(Insight.get_xpos(), Insight.get_velocity())
+        thrust = Driver.get_thrust()
+        #print(f"X Position: {x}   Velocity: {Insight.get_velocity()}   Acceleration: {Insight.get_acceleration()}")
+        #print(Space.getg())
+        time.sleep(DELTA_T)
+        Insight.set_acceleration(thrust, acceleration)
+        Insight.set_velocity()
+        Insight.set_xpos()
+        Info.update(thrust, x, Space.getg())
+        wn.update()
+        TIMER += 1
+
+class Outside_Environment(object):
+    def __init__(self):
+        self.g = 0
+    def setg(self):
+        self.g = input("Enter Acceleration Value:  ")
+    def reset(self):
+        self.g = 0
+    def getg(self):
+        return self.g
+
+
+
+class Rocket(object):
+    def __init__(self):
+        global Rocket
+        self.Rocket = turtle.Turtle()
+        self.Rocket.speed(0)
+        self.Rocket.shape("square")
+        self.Rocket.color("Black")
+        self.Rocket.penup()
+        self.Rocket.goto(INITIAL_X,INITIAL_Y)
+        #physics
+        self.xpos = INITIAL_X
+        self.velocity = V_0
+        self.acceleration = 0
+    def set_acceleration(self, thrust, acceleration):
+        self.acceleration = acceleration + (thrust / MASS)
+    def get_acceleration(self):
+        return self.acceleration
+    def set_velocity(self):
+        self.velocity = self.velocity + (self.acceleration * DELTA_T)
+    def get_velocity(self):
+        return self.velocity
+    def set_xpos(self):
+        self.Rocket.setx(self.xpos + self.velocity * DELTA_T)
+    def get_xpos(self):
+        self.xpos = self.Rocket.xcor()
+        return self.xpos
+
+
+
+class Docking_Bay(object):
+    def __init__(self):
+        global Docking_Bay
+        self.Dock = turtle.Turtle()
+        self.Dock.speed(0)
+        self.Dock.shape("square")
+        self.Dock.color("white")
+        self.Dock.shapesize(stretch_wid=5, stretch_len= 0.1)
+        self.Dock.penup()
+        self.Dock.goto(0, 0)
+
+class Pilot(object):
+    def __init__(self):
+        self.force = 0
+        self.i = 0
+    def compute(self, position, derivative):
+        self.factor = -10
+        p = position * 1.60 # position
+        d = derivative * 2 # derivative
+        self.i = (self.i + position) * 0.85 # integral
+        #print(self.i)
+        thrust = (p if p else 0) + (d if d else 0) + (self.i if self.i else 0)
+        thrust = thrust * self.factor
+        self.force = thrust
+    def reset_thrust(self):
+        self.force = 0
+    def get_thrust(self):
+        return self.force
+
+class Diagnostics(object):
+    def __init__(self):
+        self.thrust = 0
+        global Diagnostics
+        self.Info = turtle.Turtle()
+        self.Info.penup()
+        self.Info.hideturtle()
+        self.Info.goto(0,200)
+        self.Info.color("white")
+        self.Info.write(f"Thrust = {self.thrust}")
+    def update(self, power, position, g):
+        #self.thrust = power
+        g = int(g)
+        self.Info.clear()
+        self.Info.write(f"Thrust = {power:.2f}   Position = {position:.2f}    Outside Force = {g*MASS:.2f}", align= "center")
+    
+
+def main():
+    Simulation()
+main()
